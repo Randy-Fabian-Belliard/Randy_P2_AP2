@@ -24,6 +24,7 @@ object AppModule {
 fun providesMoshi(): Moshi =
     Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
+
         .build()
 
     @Provides
