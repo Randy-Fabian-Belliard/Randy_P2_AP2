@@ -43,10 +43,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.runtime.collectAsState
+
+
 
 @Composable
 fun DepositoScreen(
@@ -54,33 +56,40 @@ fun DepositoScreen(
     goToDepositoList: () -> Unit,
     depositoId: Int?
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(key1 = true) {
-        viewModel.onSetDeposito(depositoId ?: 0)
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(key1 = depositoId) {
+        if (depositoId != null) {
+            println("Cargando depósito con ID: $depositoId")
+            viewModel.onSetDeposito(depositoId)
+        }
     }
+
+    println("Estado actual: $uiState") // Log para depuración
 
     DepositoBody(
         uiState = uiState,
         onSaveDeposito = {
-            viewModel.saveDeposito()
+            val success = viewModel.saveDeposito()
+            if (success) {
+                goToDepositoList()
+            }
+            success
         },
         goToDepositoList = goToDepositoList,
-        onNewDeposito = {
-            viewModel.newDeposito()
-        },
         onConceptoChanged = viewModel::onConceptoChanged,
         onFechaChanged = viewModel::onFechaChanged,
         onMontoChanged = viewModel::onMontoChanged,
         onIdCuentaChanged = viewModel::onIdCuentaChanged,
-        onDeleteDeposito = { viewModel.deleteDeposito() }
+        onNewDeposito = viewModel::newDeposito,
+        onDeleteDeposito = viewModel::deleteDeposito
     )
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DepositoBody(
+fun DepositoBody(
     uiState: DepositoUiState,
-    onSaveDeposito: () -> Boolean,
+    onSaveDeposito: () -> Boolean, // Ahora devuelve un Boolean
     onDeleteDeposito: () -> Unit,
     goToDepositoList: () -> Unit,
     onConceptoChanged: (String) -> Unit,
@@ -91,7 +100,6 @@ private fun DepositoBody(
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val unDia = 86400000
-
     val state = rememberDatePickerState(selectableDates = object : SelectableDates {
         override fun isSelectableDate(utcTimeMillis: Long): Boolean {
             return utcTimeMillis <= System.currentTimeMillis() - unDia
@@ -150,9 +158,7 @@ private fun DepositoBody(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = {
                             IconButton(
-                                onClick = {
-                                    showDatePicker = true
-                                }
+                                onClick = { showDatePicker = true }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.DateRange,
@@ -161,9 +167,7 @@ private fun DepositoBody(
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
-                            .clickable(enabled = true) {
-                                showDatePicker = true
-                            }
+                            .clickable(enabled = true) { showDatePicker = true }
                     )
 
                     Spacer(modifier = Modifier.padding(2.dp))
@@ -204,7 +208,8 @@ private fun DepositoBody(
                         }
                         OutlinedButton(
                             onClick = {
-                                if (onSaveDeposito()) {
+                                val success = onSaveDeposito()
+                                if (success) {
                                     goToDepositoList()
                                 }
                             }

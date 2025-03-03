@@ -32,14 +32,16 @@ import edu.ucne.randy_p2_ap2.data.remote.dto.DepositosDto
 @Composable
 fun DepositoListScreen(
     viewModel: DepositoViewModel = hiltViewModel(),
-    onVerDeposito: (DepositosDto) -> Unit,
+    onVerDeposito: (Int) -> Unit,
     onAddDeposito: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     DepositoListBody(
         depositos = uiState.depositos,
-        onVerDeposito = onVerDeposito,
+        onVerDeposito = { deposito ->
+            onVerDeposito(deposito.idDeposito)
+        },
         onAddDeposito = onAddDeposito,
         onList = { viewModel.getDepositos() },
         uiState = uiState
@@ -55,6 +57,7 @@ fun DepositoListBody(
     onList: () -> Unit,
     uiState: DepositoUiState,
 ) {
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -144,3 +147,6 @@ fun DepositoListPreview() {
         uiState = DepositoUiState()
     )
 }
+
+
+

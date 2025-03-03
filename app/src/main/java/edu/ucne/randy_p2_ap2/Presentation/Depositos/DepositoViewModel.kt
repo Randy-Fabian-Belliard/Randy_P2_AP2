@@ -6,10 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.randy_p2_ap2.data.remote.dto.DepositosDto
 import edu.ucne.randy_p2_ap2.data.repository.DepositoRepository
 import edu.ucne.randy_p2_ap2.data.repository.Resource
+import edu.ucne.randy_p2_ap2.data.repository.formatDateToISO8601
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -23,10 +25,13 @@ class DepositoViewModel @Inject constructor(
     var uiState = MutableStateFlow(DepositoUiState())
         private set
 
+
     fun onSetDeposito(depositoId: Int) {
         viewModelScope.launch {
+            println("Cargando depósito con ID: $depositoId") // Log para depuración
             val deposito = depositoRepository.getDeposito(depositoId)
             deposito?.let {
+                println("Depósito cargado: $it") // Log para depuración
                 uiState.update {
                     it.copy(
                         idDeposito = deposito.idDeposito,
@@ -36,6 +41,8 @@ class DepositoViewModel @Inject constructor(
                         monto = deposito.monto
                     )
                 }
+            } ?: run {
+                println("Depósito no encontrado") // Log para depuración
             }
         }
     }
@@ -134,16 +141,18 @@ class DepositoViewModel @Inject constructor(
     }
 
     fun saveDeposito(): Boolean {
-        viewModelScope.launch {
-            if (uiState.value.idDeposito == null || uiState.value.idDeposito == 0) {
-                depositoRepository.saveDeposito(uiState.value.toDTO())
-                uiState.value = DepositoUiState()
-            } else {
-                depositoRepository.updateDeposito(uiState.value.toDTO())
+        return try {
+            val fechaISO = formatDateToISO8601(Instant.now())
+            val deposito = uiState.value.toDTO().copy(fecha = fechaISO)
+            viewModelScope.launch {
+                depositoRepository.saveDeposito(deposito)
                 uiState.value = DepositoUiState()
             }
+            true
+        } catch (e: Exception) {
+            uiState.update { it.copy(errorMessage = e.message) }
+            false
         }
-        return true
     }
 
     fun newDeposito() {
@@ -179,3 +188,4 @@ fun DepositoUiState.toDTO() = DepositosDto(
     concepto = concepto,
     monto = monto ?: 0.0
 )
+
