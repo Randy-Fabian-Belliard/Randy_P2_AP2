@@ -15,20 +15,19 @@ import edu.ucne.randy_p2_ap2.Presentation.Depositos.DepositoScreen
  fun AppNavHost(
      navHostController: NavHostController,
  ) {
-
      NavHost(navController = navHostController, startDestination = Screen.DepositoList) {
          composable<Screen.DepositoList> {
              DepositoListScreen(
-                 onVerDeposito = {
-                     navHostController.navigate(Screen.Deposito(it.idDeposito ?: 0))
+                 onVerDeposito = { depositoId ->
+                     navHostController.navigate(Screen.Deposito(depositoId))
                  },
                  onAddDeposito = {
                      navHostController.navigate(Screen.Deposito(0))
                  }
              )
          }
-         composable<Screen.Deposito> {
-             val args = it.toRoute<Screen.Deposito>()
+         composable<Screen.Deposito> { backStackEntry ->
+             val args = backStackEntry.toRoute<Screen.Deposito>()
              DepositoScreen(
                  goToDepositoList = { navHostController.navigate(Screen.DepositoList) },
                  depositoId = args.idDeposito
